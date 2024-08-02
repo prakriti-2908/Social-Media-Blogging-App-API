@@ -4,7 +4,7 @@ const {
     getFollowerListModel,
     unfollowModel,
 } = require("../models/followModel");
-const User = require("../models/userModel");
+const User = require("../models/authModel");
 
 
 const followUserController = async (req,res) => {
@@ -74,6 +74,7 @@ const getFollowingListController = async (req,res) => {
     const SKIP = Number(req.query.skip) || 0;
     try {
         const followingDb = await getFollowingListModel({userId,SKIP});
+        // if(followingDb.length==0)
         return res.send({
             status:200,
             message:"All data has been successfully fetched from db",

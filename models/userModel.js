@@ -1,64 +1,36 @@
-const bcrypt = require('bcryptjs');
-const { ObjectId } = require('mongodb');
+const userSchema = require("../schemas/userSchema");
+const blogSchema = require("../schemas/blogSchema");
 
-// file imports
-const userSchema = require('../schemas/userSchema');
-
-const User = class{
-    constructor({name,email,username,password}){
-        this.name = name;
-        this.email = email;
-        this.username=username;
-        this.password=password;
-    };
-
-    registerUser() {
-        return new Promise(async (resolve, reject) => {
-          try {
-
-            const userExist = await userSchema.findOne({
-                $or:[{email:this.email},{username:this.username}],
-            });
-
-            if(userExist && userExist.email==this.email){reject("Email already Exist")};
-            if(userExist && userExist.username==this.username){reject("Username already exist")};
-
-
-            const hashedPassword = await bcrypt.hash(
-              this.password,
-              Number(process.env.SALT)
-            );
-
-            const userObj = new userSchema({
-              name: this.name,
-              email: this.email,
-              password: hashedPassword,
-              username: this.username,
-            });
-
-            const userDb = await userObj.save();
+const getUserInfoModel = ({userID}) => {
+    return new Promise(async (resolve,reject)=>{
+        try {
+            // console.log(userID);
+            const userDb = await userSchema.findOne({_id:userID});
             resolve(userDb);
-          } catch (error) {
+        } catch (error) {
             reject(error);
-          }
-        });
-      }
-
-      static findUserWithKey({key}) {
-        return new Promise(async(resolve,reject)=>{
-            try{
-                const userDB = await userSchema.findOne({
-                    $or : [ObjectId.isValid(key)?{_id:key}:{email:key},{username:key}],
-                }).select("+password");
-        
-                if(!userDB) reject("User not found");
-                resolve(userDB);
-            }catch(err){
-                reject(err)
-            }
-        })
-      }
-    
+        }
+    })
 };
 
-module.exports = User;
+
+const dltUserModel = ({userId}) => {
+    return new Promise( async (resolve,reject)=>{
+        try {
+            const userDb = await userSchema.findOneAndDelete({_id:userId});
+            await blogSchema.deleteMany({userId:userId});
+            if(!userDb){
+                resolve("User not found");
+            }
+            resolve(userDb);
+        } catch (error) {
+            reject(error);
+        }
+    })
+}
+
+
+module.exports = {
+    getUserInfoModel,
+    dltUserModel,
+};

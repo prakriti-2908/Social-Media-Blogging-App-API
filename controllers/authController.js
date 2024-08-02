@@ -4,8 +4,8 @@ const clc = require('cli-color');
 const userDataValidation = require('../utils/userDataValidation.js');
 
 // file imports
-const User = require('../models/userModel.js');
-const { findUserWithKey } = require('../models/userModel.js');
+const User = require('../models/authModel.js');
+const { findUserWithKey } = require('../models/authModel.js');
 const sessionSchema = require('../schemas/sessionSchema.js');
 
 
@@ -116,9 +116,9 @@ logoutController = (req,res)=>{
 logoutFromAllDevicesController = async (req,res)=>{
     try{
         const userId = req.session.user.userId;
-        console.log(userId);
+        //console.log(userId);
         const deletedSessions = await sessionSchema.deleteMany({"session.user.userId":userId});
-        console.log(deletedSessions);
+        //console.log(deletedSessions);
         return res.send({
             status:200,
             message:`Logout from ${deletedSessions.deletedCount} device(s) has been successfully done`,

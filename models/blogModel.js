@@ -54,10 +54,29 @@ const deleteBlogModel = ({blogId}) => {
 }
 
 
+const restoreBlogModel = ({blogId}) => {
+    console.log("inside restore model")
+    return new Promise(async(resolve,reject)=>{
+        try{
+            // move blog to trash
+            const query = ObjectId.isValid(blogId) ? { _id: blogId } : { title: blogId };
+            const blogObj = await blogSchema.findOneAndUpdate(query, { isDeleted: false, deletionDateAndTime:null});
+            // console.log(blogObj);
+            if(!blogObj){
+                return reject("Blog doesn't exist");
+            }
+            resolve(blogObj);
+        }catch(err){
+            reject(err);
+        }
+    })
+}
+
+
 const getBlogsModel =  ({SKIP}) => {
     return new Promise(async(resolve,reject)=>{
         try {
-            const blogDb = await blogSchema.aggregate([
+            let blogDb = await blogSchema.aggregate([
                 {
                     $match : {isDeleted:{$ne:true}},
                 },
@@ -69,11 +88,15 @@ const getBlogsModel =  ({SKIP}) => {
                 },
                 {
                     $limit : LIMIT,
-                }
+                },
             ]);
             if(blogDb.length==0){
                 reject("No more blogs");
             }
+            blogDb = await blogSchema.populate(blogDb, {
+                path: 'userId', 
+                model: 'User'
+            });
             resolve(blogDb);
         } catch (error) {
             reject(error);
@@ -85,9 +108,12 @@ const getMyBlogsModel = ({SKIP,userId}) => {
     return new Promise(async (resolve,reject)=>{
         try {
             userId = userId.toString();
-            const blogDb = await blogSchema.aggregate([
+            let blogDb = await blogSchema.aggregate([
                 {
                     $match : {userId : userId, isDeleted:{$ne:true}},
+                },
+                {
+                    $sort : {creationDateAndTime:-1}
                 },
                 {
                     $skip : SKIP,
@@ -97,6 +123,10 @@ const getMyBlogsModel = ({SKIP,userId}) => {
                 }
             ]);
             if(!blogDb || blogDb.length==0){return reject("Either you don't have created any blog yet or there are no more blogs of yours")}
+            blogDb = await blogSchema.populate(blogDb, {
+                path: 'userId', 
+                model: 'User'
+            });
             resolve(blogDb);
         } catch (error) {
             reject(error);
@@ -132,7 +162,7 @@ const editBlogModel = ({editId,title,textBody}) => {
 const trashedBlogModel = ({userId}) => {
     return new Promise(async(resolve,reject)=>{
         try {
-            const trashedDb = await blogSchema.find({userId:userId,isDeleted:true});
+            const trashedDb = await blogSchema.find({userId:userId,isDeleted:true}).populate('userId').sort([['deletionDateAndTime',-1]]);
             if(!trashedDb){reject("No blog found in trash")};
             resolve(trashedDb);
         } catch (error) {
@@ -149,5 +179,6 @@ module.exports = {
     getMyBlogsModel,
     getBlogByIdModel,
     editBlogModel,
-    trashedBlogModel
+    trashedBlogModel,
+    restoreBlogModel
 };

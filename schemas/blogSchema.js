@@ -24,7 +24,7 @@ const blog = new Schema({
     userId : {
         type : String,
         required : true,
-        ref : "user",
+        ref : "User",
     },
     deletionDateAndTime:{
         type:String,

@@ -13,6 +13,7 @@ const blogRouter = require('./routers/blogRouter');
 const isAuthMiddleware = require('./middlewares/isAuthMiddleware');
 const followRouter = require('./routers/followRouter');
 const cleanupBin = require('./models/trashBlogCleanup');
+const userRouter = require('./routers/userRouter');
 
 const app = express();
 const PORT = process.env.PORT;
@@ -35,6 +36,7 @@ app.use(session({
 app.use('/auth',authRouter);                    // for endpoints ->  /auth/login or /auth/register
 app.use('/blog',isAuthMiddleware,blogRouter);                    // for endpoints-> /blog/create-blog , etc
 app.use('/follow',isAuthMiddleware,followRouter); 
+app.use('/user',isAuthMiddleware,userRouter);
 
 // api's
 app.get('/',(req,res)=>{

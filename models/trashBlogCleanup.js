@@ -12,7 +12,7 @@ const cleanupBin = () => {
           const deletedBlogs = await blogSchema.find({ isDeleted: true });
     
           let deletedBlogIds = [];
-          console.log('hi');
+          // console.log('hi');
           if (deletedBlogs.length > 0) {
             deletedBlogs.map(async (blog) => {
               const diff =
@@ -28,9 +28,9 @@ const cleanupBin = () => {
                 const deletedBlog = await blogSchema.findOneAndDelete({
                   _id: { $in: deletedBlogIds },
                 });
-                console.log(
-                  `Blog has been deleted successfully : ${deletedBlog._id}  , title : ${deletedBlog.title}`
-                );
+                // console.log(
+                //   `Blog has been deleted successfully : ${deletedBlog._id}  , title : ${deletedBlog.title}`
+                // );
               } catch (error) {
                 console.log(error);
               }

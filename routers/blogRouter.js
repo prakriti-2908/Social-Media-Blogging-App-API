@@ -10,7 +10,8 @@ const {
     getMyBlogsController,
     getAllBlogsController,
     editBlogController,
-    trashedBlogsController, 
+    trashedBlogsController,
+    restoreBlogController, 
 } = require('../controllers/blogController');
 
 
@@ -19,9 +20,11 @@ blogRouter
           .post('/create-blog',createBlogController)
           .post('/delete-blog',deleteBlogController)
           .post('/edit-blog',editBlogController)
+          .post('/restore-blog',restoreBlogController)
           .get('/get-all-blogs',getAllBlogsController)
           .get('/get-my-blogs',getMyBlogsController)
           .get('/trashed-blogs',trashedBlogsController)
+          
 
 
 

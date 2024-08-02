@@ -1,5 +1,6 @@
 const { LIMIT } = require("../pvtConstants");
 const followSchema = require("../schemas/followSchema");
+const userSchema = require("../schemas/userSchema");
 
 const addInFollowSchemaModel = ({followerUserId, followingUserId}) => {
     return new Promise(async(resolve,reject)=>{
@@ -22,6 +23,20 @@ const addInFollowSchemaModel = ({followerUserId, followingUserId}) => {
                 following:followingUserId,
             });
             const followDb = await followObj.save();
+
+
+            // increasing following and follower count
+            await userSchema.findOneAndUpdate(
+                { _id: followerUserId },
+                { $inc: { followingCount: 1 } }
+            );
+
+            // Increase follower count for the user being followed
+            await userSchema.findOneAndUpdate(
+                { _id: followingUserId },
+                { $inc: { followerCount: 1 } }
+            );
+
             resolve(followDb);
         } catch (error) {
             reject(error);
@@ -29,40 +44,61 @@ const addInFollowSchemaModel = ({followerUserId, followingUserId}) => {
     })
 }
 
-const unfollowModel = ({userId,unfollowId}) => {
-    return new Promise(async(resolve,reject)=>{
+const unfollowModel = ({ userId, unfollowId }) => {
+    return new Promise(async (resolve, reject) => {
         try {
             const unfollowDb = await followSchema.findOneAndDelete({
-                follower:userId,
-                following:unfollowId,              
-            }).populate('following');
+                follower: userId,
+                following: unfollowId,
+            });
 
-            if(!unfollowDb){reject(`No user found with unfollow id ${unfollowId}`)};
+            if (!unfollowDb) {
+                return reject(`No user found with unfollow id ${unfollowId}`);
+            }
+
+            // Decrease following count for the user
+            await userSchema.findOneAndUpdate(
+                { _id: userId },
+                { $inc: { followingCount: -1 } }
+            );
+
+            // Decrease follower count for the user being unfollowed
+            await userSchema.findOneAndUpdate(
+                { _id: unfollowId },
+                { $inc: { followerCount: -1 } }
+            );
 
             resolve(unfollowDb);
         } catch (error) {
-            reject(error)
+            reject(error);
         }
-    })
-}
+    });
+};
 
-const getFollowingListModel = ({userId,SKIP}) => {
-    return new Promise(async(resolve,reject)=>{
+
+const getFollowingListModel = ({userId, SKIP}) => {
+    return new Promise(async (resolve, reject) => {
         try {
             const followingDb = await followSchema
-                                                  .find({follower:userId})
-                                                  .populate('following')
-                                                  .sort({creationDateAndTime:-1})
-                                                  .skip(SKIP)
-                                                  .limit(LIMIT);
+                .find({follower: userId})
+                .populate('following')
+                .sort({creationDateAndTime: -1})
+                .skip(SKIP)
+                .limit(LIMIT);
 
-            if(followingDb.length==0 || !followingDb){reject("You have not followed anyone yet")};
-            resolve(followingDb);
+            
+
+            if (!followingDb || followingDb.length === 0) {
+                reject("You have not followed anyone yet");
+            } else {
+                resolve(followingDb);
+            }
         } catch (error) {
             reject(error);
         }
     });
 }
+
 
 const getFollowerListModel = ({userId,SKIP}) => {
     return new Promise(async(resolve,reject)=>{

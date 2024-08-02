@@ -6,7 +6,8 @@ const {
     getMyBlogsModel,
     getBlogByIdModel,
     editBlogModel,
-    trashedBlogModel, 
+    trashedBlogModel,
+    restoreBlogModel, 
 } = require("../models/blogModel");
 
 
@@ -91,30 +92,75 @@ const deleteBlogController = async (req,res)=>{
             error:err.toString(),
         })
     }
-}
+};
 
-const getAllBlogsController = async (req,res) => {
-
-    const SKIP = Number(req.query.skip) || 0;
-
-    try {
-        const blogDb = await getBlogsModel({SKIP});
-        
+const restoreBlogController = async (req,res) => {
+    //console.log("inside restore controller")
+    const {blogId} = req.body;
+    //console.log("blog id ",blogId);
+    const userId = req.session.user.userId;
+    //console.log("userId , ",userId);
+    if(!blogId){
         return res.send({
-            status:200,
-            message:"Blogs has been fetched successfully",
-            allBlogs : blogDb,
-        })
-    } catch (error) {
-        return res.send({
-            status:500,
-            message:"Internal server error",
-            error:error.toString(),
+            status:400,
+            message:"No blog Id is provided"
         })
     }
 
+    // ownership check
+    try {
+        const blogDb = await getBlogByIdModel({editId:blogId});
+        //console.log("blog db from getblogbyid",blogDb)
+        // console.log(userId.toString(),blogDb.userId.toString());
+        if(blogDb.userId.toString() !== userId.toString()){
+            return res.send({
+                status:403,
+                message:"Forbidden request",
+                error:"you are not allowed to use this feature on someone else's blog",
+            })
+        }
+    } catch (error) {
+        return res.send({
+            status:500,
+            message:"Internal server error in ownership",
+            error : error.toString(),
+        })
+    }
 
+    try{
+        const restoredBlog = await restoreBlogModel({blogId});
+        //console.log("restored blog - ",restoredBlog);
+        return res.send({
+            status:200,
+            message:"Blog is being moved from trash",
+            restoredBlog,
+        })
+    }catch(err){
+        return res.send({
+            status:500,
+            message:"Internal Server Error in trash",
+            error:err.toString(),
+        })
+    }
 }
+
+const getAllBlogsController = async (req, res) => {
+    const SKIP = Number(req.query.skip) || 0;
+
+    try {
+        const blogDb = await getBlogsModel({ SKIP });
+        return res.status(200).send({
+            message: "Blogs have been fetched successfully",
+            allBlogs: blogDb,
+        });
+    } catch (error) {
+        return res.status(500).send({
+            message: "Internal server error",
+            error: error.toString(),
+        });
+    }
+};
+
 
 const getMyBlogsController = async (req,res) => {
     const userId = req.session.user.userId;
@@ -231,7 +277,8 @@ module.exports = {
     getAllBlogsController,
     getMyBlogsController,
     editBlogController,
-    trashedBlogsController
+    trashedBlogsController,
+    restoreBlogController
 };
 
 
